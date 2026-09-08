@@ -48,7 +48,7 @@
 ### Note
 1. the api-text.html must be live to be able to connect with resource, you may use VS code live server
 2. Deploy using `terraform apply -var-file="secrets.tfvars"`, knowing the secrets.tfvars must have `smtp_password`, `smtp_user`
-
+3. You can use Cloudfront when fetching images but i didn't, since it requires a verified AWS account
 ---
 
 ## References
