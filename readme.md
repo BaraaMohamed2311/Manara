@@ -1,8 +1,10 @@
+![Architecture Diagram](assets/manara.gif)
+
 ## Execution Steps
 
 ### S3
 
-- paths  /fresh , /resized, /watermarked , /final
+- paths /fresh , /resized, /watermarked , /final
 
 1. create source ,destination buckets
 2. enable versioning on both (required for CRR)
@@ -26,8 +28,6 @@
     2. function to trigger the sfn process by sqs message
     3. check status of image being processed
 
-
-
 ### SNS
 
 1. create sns topic that uses email protocl to send notifications
@@ -37,19 +37,21 @@
 1. create main queue 
 2. create dlq queue and select the main queue as src queue
 
-
 ### DynamoDB
 
 1. create db table with primary key as only field defined since it's unstructured db so any other fields are handled by app itself
 
+---
+
+## Deployment & Usage Notes
 
 ### Note
 1. the api-text.html must be live to be able to connect with resource, you may use VS code live server
-2. Deploy using terraform apply -var-file="secrets.tfvars", knowing the secrets.tfvars must have smtp_password, smtp_user
+2. Deploy using `terraform apply -var-file="secrets.tfvars"`, knowing the secrets.tfvars must have `smtp_password`, `smtp_user`
 
+---
 
-
-### Refernces
+## References
 - Terraform docs
 - https://www.youtube.com/watch?v=1D9ggTJ9Ejc
 - https://awstip.com/s3-cross-region-replication-and-s3-batch-operations-for-disaster-recovery-using-terraform-11a12fd2bc92
@@ -60,7 +62,3 @@
 - https://aws.amazon.com/blogs/storage/managing-delete-marker-replication-in-amazon-s3/
 - https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-content-structure.html
 - https://medium.com/@IT_Sammy/amazon-sns-email-subscription-problems-26e385ced9f5 (due to that issue, i replaced with workflow from lamda -> sns -> mailbox with sns -> lambda -> mailbox)
-
-
-
-
