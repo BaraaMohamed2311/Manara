@@ -9,9 +9,7 @@
 1. create source ,destination buckets
 2. enable versioning on both (required for CRR)
 3. configure lifecycle handling to lower the cost for IA
-4. create iam role with assume role for temp access from src bucket to dst bucket
-5. create a policy for that assume role to interact with src and dst
-6. create a resource policy for dst to allow replication interactions by source
+
 
 ### Lambda & step functions
 
@@ -41,6 +39,9 @@
 ### DynamoDB
 
 1. create db table with primary key as only field defined since it's unstructured db so any other fields are handled by app itself
+
+### Roles And Policies
+I created all required assumedRoles and policies for the services to communicate and operate
 
 ---
 
