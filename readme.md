@@ -1,5 +1,5 @@
+![Architecture Diagram](assets/diagram.PNG)
 ![Architecture Diagram](assets/manara.gif)
-
 ## Execution Steps
 
 ### S3
@@ -21,12 +21,13 @@
     2. Resize
     3. Watermark
     4. Store
-    5. formatter and send email
+
 
     -> helpers
     1. generatePresignedURL for s3 uploading
     2. function to trigger the sfn process by sqs message
     3. check status of image being processed
+    4. formatter and send email
 
 ### SNS
 
@@ -49,6 +50,8 @@
 1. the api-text.html must be live to be able to connect with resource, you may use VS code live server
 2. Deploy using `terraform apply -var-file="secrets.tfvars"`, knowing the secrets.tfvars must have `smtp_password`, `smtp_user`
 3. You can use Cloudfront when fetching images but i didn't, since it requires a verified AWS account
+4. for improvments the serverless function should delete the image from previous folder after successfully moving to the next stage,
+   so the image either stuck on stage folder on failure or it makes it to the /final folder without leaving old versions in other folders
 ---
 
 ## References
