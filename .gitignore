@@ -1,0 +1,9 @@
+terraform.tfstate
+terraform.tfstate.*
+secrets.auto.tfvars
+secrets.auto.tfvars.*
+secrets.tfvars
+secrets.tfvars.*
+**/package/
+**/zipped/*
+!**/zipped/.gitkeep

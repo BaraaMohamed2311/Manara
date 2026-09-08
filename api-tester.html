@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Gateway Upload/Download Tester</title>
+<style>
+  :root{
+    --bg:#0f1220;
+    --panel:#171b2e;
+    --panel-2:#1e2338;
+    --border:#2a2f4a;
+    --text:#e8e9f3;
+    --muted:#9aa0c3;
+    --accent:#7c8cff;
+    --accent-2:#4dd0e1;
+    --ok:#4ade80;
+    --err:#f87171;
+    --radius:14px;
+    font-family: "Segoe UI", ui-sans-serif, system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(124,140,255,0.15), transparent 60%),
+      radial-gradient(1000px 600px at 110% 10%, rgba(77,208,225,0.12), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    padding:32px 16px 80px;
+  }
+  .wrap{max-width:880px;margin:0 auto;}
+  h1{
+    font-size:1.6rem;
+    margin:0 0 6px;
+    letter-spacing:-0.02em;
+  }
+  .sub{color:var(--muted);margin:0 0 28px;font-size:0.95rem;}
+  .card{
+    background:linear-gradient(180deg, var(--panel), var(--panel-2));
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:22px 22px 24px;
+    margin-bottom:22px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.25);
+  }
+  .card h2{
+    font-size:1.05rem;
+    margin:0 0 14px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .step-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:24px;height:24px;
+    border-radius:50%;
+    background:var(--accent);
+    color:#10122a;
+    font-size:0.8rem;
+    font-weight:700;
+    flex-shrink:0;
+  }
+  label{
+    display:block;
+    font-size:0.82rem;
+    color:var(--muted);
+    margin:14px 0 6px;
+  }
+  label:first-of-type{margin-top:0;}
+  input[type="text"], input[type="url"]{
+    width:100%;
+    padding:11px 13px;
+    background:#0c0e1c;
+    border:1px solid var(--border);
+    border-radius:9px;
+    color:var(--text);
+    font-size:0.92rem;
+    outline:none;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  input[type="text"]:focus, input[type="url"]:focus{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(124,140,255,0.18);
+  }
+  input[type="file"]{
+    width:100%;
+    padding:10px;
+    background:#0c0e1c;
+    border:1px dashed var(--border);
+    border-radius:9px;
+    color:var(--muted);
+    font-size:0.88rem;
+  }
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .row > *{flex:1;}
+  button{
+    appearance:none;
+    border:none;
+    cursor:pointer;
+    padding:11px 18px;
+    border-radius:9px;
+    font-size:0.9rem;
+    font-weight:600;
+    color:#0c0e1c;
+    background:linear-gradient(135deg, var(--accent), var(--accent-2));
+    transition:transform .1s ease, opacity .15s ease;
+    white-space:nowrap;
+  }
+  button:hover{transform:translateY(-1px);}
+  button:active{transform:translateY(0);}
+  button:disabled{opacity:0.45; cursor:not-allowed; transform:none;}
+  button.secondary{
+    background:transparent;
+    color:var(--text);
+    border:1px solid var(--border);
+  }
+  .actions{margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;}
+  .status{
+    margin-top:14px;
+    font-size:0.85rem;
+    padding:10px 12px;
+    border-radius:9px;
+    display:none;
+    word-break:break-word;
+  }
+  .status.show{display:block;}
+  .status.ok{background:rgba(74,222,128,0.1); color:var(--ok); border:1px solid rgba(74,222,128,0.3);}
+  .status.err{background:rgba(248,113,113,0.1); color:var(--err); border:1px solid rgba(248,113,113,0.3);}
+  .status.info{background:rgba(124,140,255,0.1); color:var(--accent); border:1px solid rgba(124,140,255,0.3);}
+  pre{
+    margin-top:12px;
+    background:#0a0c18;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:14px;
+    font-size:0.78rem;
+    line-height:1.5;
+    overflow-x:auto;
+    color:#c7cbee;
+    max-height:320px;
+  }
+  .pill{
+    display:inline-block;
+    font-size:0.72rem;
+    padding:3px 9px;
+    border-radius:999px;
+    background:rgba(124,140,255,0.15);
+    color:var(--accent);
+    margin-left:8px;
+    vertical-align:middle;
+  }
+  img.preview{
+    max-width:100%;
+    border-radius:10px;
+    margin-top:14px;
+    border:1px solid var(--border);
+    display:block;
+  }
+  .locked{opacity:0.5; pointer-events:none;}
+  .hint{font-size:0.76rem; color:var(--muted); margin-top:6px;}
+  a.link{color:var(--accent-2); word-break:break-all;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>API Gateway Tester <span class="pill">presigned upload / download</span></h1>
+  <p class="sub">Configure your API base URL, request a presigned upload, upload a file to S3, then fetch a download URL by image ID.</p>
+
+  <!-- Step 0: Base URL -->
+  <div class="card">
+    <h2><span class="step-badge">0</span> API Gateway Base URL</h2>
+    <label for="baseUrl">Base URL</label>
+    <input type="url" id="baseUrl" placeholder="https://xqqtpc5iqg.execute-api.us-east-1.amazonaws.com">
+    <div class="actions">
+      <button id="saveBaseUrl">Save</button>
+      <button class="secondary" id="clearAll">Clear all saved data</button>
+    </div>
+    <div class="status" id="baseUrlStatus"></div>
+  </div>
+
+  <!-- CORS help -->
+  <div class="card" id="corsCard" style="display:none;">
+    <h2>⚠️ CORS Error Detected</h2>
+    <p class="hint" style="font-size:0.85rem; line-height:1.6;">
+      The browser blocked the response because the server didn't send the right CORS headers <strong>on the actual response</strong> (not just on the OPTIONS preflight). This is a server-side fix, not a client-side one:
+    </p>
+    <ul style="font-size:0.85rem; color:var(--muted); line-height:1.7; margin:8px 0;">
+      <li><strong>API Gateway (HTTP API):</strong> enable CORS on the API and set <code>Access-Control-Allow-Origin</code> (or your exact origin), <code>Access-Control-Allow-Methods: GET,POST,OPTIONS</code>.</li>
+      <li><strong>API Gateway (REST API / Lambda proxy):</strong> your Lambda must include <code>Access-Control-Allow-Origin</code> in the headers of <em>every</em> response it returns (200s and errors), since Lambda proxy integrations don't add this automatically.</li>
+      <li><strong>S3 bucket (for the presigned POST upload):</strong> add a CORS configuration on the bucket allowing your origin, method <code>POST</code>, and header <code>*</code>.</li>
+    </ul>
+    <p class="hint">Once headers are added server-side, retry the request below — no changes needed here.</p>
+  </div>
+
+  <!-- Step 1: Get presigned URL -->
+  <div class="card" id="step1Card">
+    <h2><span class="step-badge">1</span> Get Presigned Upload URL</h2>
+    <p class="hint">GET {baseUrl}/uploads/presigned-url</p>
+    <div class="actions">
+      <button id="getPresigned">Fetch presigned URL</button>
+    </div>
+    <div class="status" id="presignedStatus"></div>
+    <pre id="presignedOutput" style="display:none;"></pre>
+  </div>
+
+  <!-- Step 2: Upload file -->
+  <div class="card" id="step2Card">
+    <h2><span class="step-badge">2</span> Upload File to S3</h2>
+    <label for="fileInput">Choose a file</label>
+    <input type="file" id="fileInput">
+    <div class="actions">
+      <button id="uploadFile">Upload to S3</button>
+    </div>
+    <div class="status" id="uploadStatus"></div>
+  </div>
+
+  <!-- Step 4: Check status (polling) -->
+  <div class="card" id="step4Card">
+    <h2><span class="step-badge">4</span> Check Processing Status</h2>
+    <p class="hint">GET {baseUrl}/check-status?imageId={id}</p>
+    <label for="statusImageId">Tracked Image ID (captured automatically when step 1 returns one; independent of the Step 3 field so it won't drift if you edit that for downloads)</label>
+    <div class="row">
+      <input type="text" id="statusImageId" placeholder="e.g. 472682ab-6361-4e04-8aab-99dfb965a84e">
+      <button class="secondary" id="useCurrentImageId" title="Copy the value currently in the Step 3 Image ID field into the tracked ID">Use Step 3's ID</button>
+    </div>
+    <div class="actions">
+      <button id="checkStatusOnce">Check once</button>
+      <button class="secondary" id="pollStatus">Start polling</button>
+    </div>
+    <div class="status" id="statusCheckStatus"></div>
+    <pre id="statusCheckOutput" style="display:none;"></pre>
+  </div>
+
+  <!-- Step 3: Image ID -->
+  <div class="card" id="step3Card">
+    <h2><span class="step-badge">3</span> Image ID</h2>
+    <label for="imageId">Image ID (auto-filled after upload, editable)</label>
+    <input type="text" id="imageId" placeholder="e.g. 472682ab-6361-4e04-8aab-99dfb965a84e">
+    <div class="actions">
+      <button id="getDownloadUrl">Get download URL</button>
+    </div>
+    <div class="status" id="downloadStatus"></div>
+    <pre id="downloadOutput" style="display:none;"></pre>
+    <img id="preview" class="preview" style="display:none;">
+  </div>
+
+  
+
+  <div class="card">
+    <h2>Session Storage</h2>
+    <p class="hint">All fetched data is persisted to <code>sessionStorage</code> so it survives a page refresh (cleared when the tab closes).</p>
+    <div class="actions">
+      <button class="secondary" id="showStorage">View stored session data</button>
+    </div>
+    <pre id="storageOutput" style="display:none;"></pre>
+  </div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+
+  // ---------- storage helpers ----------
+  const SKEY = {
+    base: 'apiTester_baseUrl',
+    presigned: 'apiTester_presignedResponse',
+    imageId: 'apiTester_imageId',
+    download: 'apiTester_downloadResponse',
+    statusImageId: 'apiTester_statusImageId'
+  };
+
+  function setStatus(el, message, type){
+    el.textContent = message;
+    el.className = 'status show ' + type;
+  }
+
+  function loadState(){
+    const base = sessionStorage.getItem(SKEY.base);
+    if(base) $('baseUrl').value = base;
+
+    const presigned = sessionStorage.getItem(SKEY.presigned);
+    if(presigned){
+      $('presignedOutput').style.display = 'block';
+      $('presignedOutput').textContent = presigned;
+      setStatus($('presignedStatus'), 'Loaded from previous session.', 'info');
+    }
+
+    const imageId = sessionStorage.getItem(SKEY.imageId);
+    if(imageId) $('imageId').value = imageId;
+
+    const statusImageId = sessionStorage.getItem(SKEY.statusImageId);
+    if(statusImageId) $('statusImageId').value = statusImageId;
+
+    const download = sessionStorage.getItem(SKEY.download);
+    if(download){
+      $('downloadOutput').style.display = 'block';
+      $('downloadOutput').textContent = download;
+      setStatus($('downloadStatus'), 'Loaded from previous session.', 'info');
+      try{
+        const parsed = JSON.parse(download);
+        const url = parsed.url || parsed.downloadUrl || parsed.download_url;
+        if(url){
+          $('preview').src = url;
+          $('preview').style.display = 'block';
+        }
+      }catch(e){}
+    }
+  }
+
+  function isLikelyCorsError(err){
+    // Browsers surface CORS/network blocks as a generic TypeError with no HTTP status.
+    return err instanceof TypeError && /fetch/i.test(err.message);
+  }
+
+  function reportError(statusEl, err){
+    if(isLikelyCorsError(err)){
+      $('corsCard').style.display = 'block';
+      $('corsCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setStatus(statusEl, 'Request blocked (likely CORS) — see the CORS panel above for the fix.', 'err');
+    } else {
+      setStatus(statusEl, 'Error: ' + err.message, 'err');
+    }
+  }
+
+  function getBaseUrl(){
+    let base = $('baseUrl').value.trim();
+    if(base.endsWith('/')) base = base.slice(0, -1);
+    return base;
+  }
+
+  // ---------- Step 0 ----------
+  $('saveBaseUrl').addEventListener('click', () => {
+    const base = getBaseUrl();
+    if(!base){
+      setStatus($('baseUrlStatus'), 'Please enter a base URL.', 'err');
+      return;
+    }
+    sessionStorage.setItem(SKEY.base, base);
+    setStatus($('baseUrlStatus'), 'Saved: ' + base, 'ok');
+  });
+
+  $('clearAll').addEventListener('click', () => {
+    Object.values(SKEY).forEach(k => sessionStorage.removeItem(k));
+    location.reload();
+  });
+
+  // ---------- Step 1: presigned url ----------
+  $('getPresigned').addEventListener('click', async () => {
+    const base = getBaseUrl();
+    if(!base){
+      setStatus($('presignedStatus'), 'Set the base URL first (step 0).', 'err');
+      return;
+    }
+    setStatus($('presignedStatus'), 'Requesting presigned URL...', 'info');
+    $('getPresigned').disabled = true;
+    $('corsCard').style.display = 'none';
+    try{
+      const res = await fetch(base + '/uploads/presigned-url', { method: 'GET', mode: 'cors' });
+      const raw = await res.text();
+
+      // Always show whatever came back, even on non-2xx, so the user can see the actual response.
+      let data;
+      try{ data = JSON.parse(raw); }catch(e){ data = null; }
+      $('presignedOutput').style.display = 'block';
+      $('presignedOutput').textContent = data ? JSON.stringify(data, null, 2) : (raw || '(empty response)');
+
+      if(!res.ok){
+        throw new Error('HTTP ' + res.status + ' ' + res.statusText);
+      }
+      if(!data){
+        throw new Error('Response was not valid JSON.');
+      }
+
+      sessionStorage.setItem(SKEY.presigned, JSON.stringify(data, null, 2));
+      setStatus($('presignedStatus'), 'Presigned URL received.', 'ok');
+
+      if(data.image_id){
+        $('imageId').value = data.image_id;
+        sessionStorage.setItem(SKEY.imageId, data.image_id);
+
+        // Capture independently for status polling — the image_id exists as soon as it's
+        // issued here, well before the Step 3 field might later be overwritten for a download check.
+        $('statusImageId').value = data.image_id;
+        sessionStorage.setItem(SKEY.statusImageId, data.image_id);
+      }
+    }catch(err){
+      reportError($('presignedStatus'), err);
+    }finally{
+      $('getPresigned').disabled = false;
+    }
+  });
+
+  // ---------- Step 2: upload to S3 ----------
+  $('uploadFile').addEventListener('click', async () => {
+    const presignedRaw = sessionStorage.getItem(SKEY.presigned);
+    const fileEl = $('fileInput');
+
+    if(!presignedRaw){
+      setStatus($('uploadStatus'), 'Fetch the presigned URL first (step 1).', 'err');
+      return;
+    }
+    if(!fileEl.files.length){
+      setStatus($('uploadStatus'), 'Choose a file to upload.', 'err');
+      return;
+    }
+
+    let presigned;
+    try{
+      presigned = JSON.parse(presignedRaw);
+    }catch(e){
+      setStatus($('uploadStatus'), 'Stored presigned data is invalid JSON.', 'err');
+      return;
+    }
+
+    const uploadUrl = presigned.url;
+    const fields = presigned.fields || {};
+
+    if(!uploadUrl){
+      setStatus($('uploadStatus'), 'No "url" field found in presigned response.', 'err');
+      return;
+    }
+
+    const formData = new FormData();
+    Object.keys(fields).forEach(key => {
+      formData.append(key, fields[key]);
+    });
+    // File MUST be appended last
+    formData.append('file', fileEl.files[0]);
+
+    setStatus($('uploadStatus'), 'Uploading to S3...', 'info');
+    $('uploadFile').disabled = true;
+    $('corsCard').style.display = 'none';
+    try{
+      const res = await fetch(uploadUrl, { method: 'POST', mode: 'cors', body: formData });
+      // S3 presigned POST typically returns 204 No Content (or 201) on success
+      if(res.ok || res.status === 204){
+        setStatus($('uploadStatus'), 'Upload succeeded (HTTP ' + res.status + ').', 'ok');
+
+        // Extract image_id from the presigned key (e.g. "fresh/b32b5dcb-…" → "b32b5dcb-…")
+        const keyField = presigned.key || (presigned.fields && presigned.fields.key) || '';
+        const imageIdFromKey = keyField.includes('/') ? keyField.split('/').pop() : keyField;
+
+        if(imageIdFromKey){
+          // Populate both the download field and the polling field
+          $('imageId').value = imageIdFromKey;
+          sessionStorage.setItem(SKEY.imageId, imageIdFromKey);
+          $('statusImageId').value = imageIdFromKey;
+          sessionStorage.setItem(SKEY.statusImageId, imageIdFromKey);
+
+          setStatus($('uploadStatus'),
+            'Upload succeeded (HTTP ' + res.status + '). Auto-starting status polling for ' + imageIdFromKey + '…', 'ok');
+
+          // Auto-start polling — scroll to step 4 so the user can see it
+          stopPolling();   // clear any previous run
+          startPolling();
+          $('step4Card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      } else {
+        const text = await res.text();
+        throw new Error('HTTP ' + res.status + ' — ' + text.slice(0, 300));
+      }
+    }catch(err){
+      reportError($('uploadStatus'), err);
+    }finally{
+      $('uploadFile').disabled = false;
+    }
+  });
+
+  // ---------- Step 3: download url ----------
+  $('getDownloadUrl').addEventListener('click', async () => {
+    const base = getBaseUrl();
+    const imageId = $('imageId').value.trim();
+
+    if(!base){
+      setStatus($('downloadStatus'), 'Set the base URL first (step 0).', 'err');
+      return;
+    }
+    if(!imageId){
+      setStatus($('downloadStatus'), 'Enter an image ID.', 'err');
+      return;
+    }
+
+    sessionStorage.setItem(SKEY.imageId, imageId);
+    setStatus($('downloadStatus'), 'Requesting download URL...', 'info');
+    $('getDownloadUrl').disabled = true;
+    $('preview').style.display = 'none';
+    $('corsCard').style.display = 'none';
+    try{
+      const res = await fetch(base + '/images/' + encodeURIComponent(imageId) + '/download-url', { method: 'GET', mode: 'cors' ,  });
+      const raw = await res.text();
+
+      let data;
+      try{ data = JSON.parse(raw); }catch(e){ data = null; }
+      $('downloadOutput').style.display = 'block';
+      $('downloadOutput').textContent = data ? JSON.stringify(data, null, 2) : (raw || '(empty response)');
+
+      if(!res.ok) throw new Error('HTTP ' + res.status + ' ' + res.statusText);
+      if(!data) throw new Error('Response was not valid JSON.');
+
+      sessionStorage.setItem(SKEY.download, JSON.stringify(data, null, 2));
+      setStatus($('downloadStatus'), 'Download URL received.', 'ok');
+
+      const url = data.url || data.downloadUrl || data.download_url;
+      if(url){
+        $('preview').src = url;
+        $('preview').style.display = 'block';
+      }
+    }catch(err){
+      reportError($('downloadStatus'), err);
+    }finally{
+      $('getDownloadUrl').disabled = false;
+    }
+  });
+
+  // ---------- Step 4: status check (single + polling) ----------
+  let pollTimer = null;
+  let requestInFlight = false;   // guards against overlapping fetches, which otherwise abort
+                                  // each other and throw a generic TypeError that looks like CORS
+  let consecutiveFailures = 0;
+  const POLL_INTERVAL_MS = 3000;
+  const MAX_CONSECUTIVE_FAILURES = 3; // avoid flashing the CORS panel on one transient blip
+  const TERMINAL_STATUSES = ['complete', 'completed', 'done', 'success', 'succeeded', 'failed', 'error'];
+
+  $('statusImageId').addEventListener('input', () => {
+    sessionStorage.setItem(SKEY.statusImageId, $('statusImageId').value.trim());
+  });
+
+  $('useCurrentImageId').addEventListener('click', () => {
+    const val = $('imageId').value.trim();
+    if(!val){
+      setStatus($('statusCheckStatus'), 'Step 3\'s Image ID field is empty.', 'err');
+      return;
+    }
+    $('statusImageId').value = val;
+    sessionStorage.setItem(SKEY.statusImageId, val);
+  });
+
+  async function checkStatusOnce(isPollTick){
+    const base = getBaseUrl();
+    const imageId = $('statusImageId').value.trim();
+
+    if(!base){
+      setStatus($('statusCheckStatus'), 'Set the base URL first (step 0).', 'err');
+      return null;
+    }
+    if(!imageId){
+      setStatus($('statusCheckStatus'), 'No tracked Image ID yet — fetch a presigned URL (step 1), or use "Use Step 3\'s ID".', 'err');
+      return null;
+    }
+
+    // Skip this tick rather than pile a second request on top of one still in flight.
+    if(requestInFlight){
+      return null;
+    }
+    requestInFlight = true;
+
+    if(!isPollTick) $('corsCard').style.display = 'none';
+    try{
+      const res = await fetch(base + '/check-status?imageId=' + encodeURIComponent(imageId), { method: 'GET', mode: 'cors' });
+      const raw = await res.text();
+
+      let data;
+      try{ data = JSON.parse(raw); }catch(e){ data = null; }
+      $('statusCheckOutput').style.display = 'block';
+      $('statusCheckOutput').textContent = data ? JSON.stringify(data, null, 2) : (raw || '(empty response)');
+
+      if(!res.ok) throw new Error('HTTP ' + res.status + ' ' + res.statusText);
+      if(!data) throw new Error('Response was not valid JSON.');
+
+      consecutiveFailures = 0;
+      const status = (data.status || '').toString();
+      setStatus($('statusCheckStatus'), 'Status: ' + (status || '(unknown)') + (isPollTick ? ' (polling...)' : ''), 'ok');
+      return status;
+    }catch(err){
+      consecutiveFailures++;
+      // On a lone poll tick, don't jump straight to "CORS error" for what's likely a one-off blip.
+      if(!isPollTick || consecutiveFailures >= MAX_CONSECUTIVE_FAILURES){
+        reportError($('statusCheckStatus'), err);
+      } else {
+        setStatus($('statusCheckStatus'), 'Poll attempt failed (' + consecutiveFailures + '/' + MAX_CONSECUTIVE_FAILURES + '), retrying...', 'info');
+      }
+      return null;
+    }finally{
+      requestInFlight = false;
+    }
+  }
+
+  function stopPolling(){
+    if(pollTimer){
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+    consecutiveFailures = 0;
+    $('pollStatus').textContent = 'Start polling';
+    $('pollStatus').classList.add('secondary');
+  }
+
+  function startPolling(){
+    $('pollStatus').textContent = 'Stop polling';
+    $('pollStatus').classList.remove('secondary');
+
+    const tick = async () => {
+      const status = await checkStatusOnce(true);
+      if(status && TERMINAL_STATUSES.includes(status.toLowerCase())){
+        stopPolling();
+      }
+    };
+
+    tick(); // check immediately, then on an interval
+    pollTimer = setInterval(tick, POLL_INTERVAL_MS);
+  }
+
+  $('checkStatusOnce').addEventListener('click', () => {
+    stopPolling();
+    checkStatusOnce(false);
+  });
+
+  $('pollStatus').addEventListener('click', () => {
+    if(pollTimer){
+      stopPolling();
+    } else {
+      startPolling();
+    }
+  });
+
+  // ---------- session storage viewer ----------
+  $('showStorage').addEventListener('click', () => {
+    const dump = {};
+    Object.entries(SKEY).forEach(([name, key]) => {
+      const val = sessionStorage.getItem(key);
+      dump[name] = val ? (name === 'base' || name === 'imageId' ? val : tryParse(val)) : null;
+    });
+    $('storageOutput').style.display = 'block';
+    $('storageOutput').textContent = JSON.stringify(dump, null, 2);
+  });
+
+  function tryParse(v){
+    try{ return JSON.parse(v); }catch(e){ return v; }
+  }
+
+  loadState();
+</script>
+</body>
+</html>
