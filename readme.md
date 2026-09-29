@@ -30,7 +30,7 @@
 
 ### SNS
 
-1. create sns topic that uses email protocl to send notifications
+1. create sns topic that triggers the mailer lambda
 
 ### SQS
 
