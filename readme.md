@@ -1,5 +1,6 @@
 ![Architecture Diagram](assets/diagram.PNG)
 ![Architecture Diagram](assets/manara.gif)
+![Demo](assets/demo.gif)
 ## Execution Steps
 
 ### S3
